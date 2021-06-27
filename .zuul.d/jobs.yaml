@@ -29,6 +29,8 @@
         - ubuntu-minimal/xenial-build-succeeds
         - ubuntu-minimal/bionic-build-succeeds
         - ubuntu-minimal/focal-build-succeeds
+        - containerfile/focal-build-succeeds
+        - fedora-container/build-succeeds
 
 - job:
     name: dib-functests-image
@@ -139,6 +141,7 @@
       under nodepool, using source versions of dependencies such as
       nodepool, dib, openstacksdk and glean.
     parent: nodepool-functional-container-openstack-siblings-base
+    post-run: playbooks/dib-nodepool/collect-openstack-logs.yaml
     vars:
       nodepool_debug: true
 
@@ -178,14 +181,18 @@
         # mirror: "http://{{ zuul_site_mirror_fqdn }}/centos"
 
 - job:
-    name: dib-nodepool-functional-openstack-fedora-32-src
+    name: dib-nodepool-functional-openstack-fedora-34-containerfile-src
     description: |
-      Test building and booting a Fedora 32 image with Nodepool and OpenStack
+      Test building and booting an Fedora image from a
+      containerfile with Nodepool and OpenStack (using released
+      libraries)
     parent: dib-nodepool-functional-src-base
+    pre-run: playbooks/dib-nodepool/debootstrap.yaml
     vars:
+      nodepool_debug: true
       nodepool_diskimage:
-        base_element: fedora-minimal
-        release: '32'
+        base_element: fedora-container
+        release: '34'
 
 - job:
     name: dib-nodepool-functional-openstack-ubuntu-xenial-src
@@ -198,26 +205,6 @@
       nodepool_diskimage:
         base_element: ubuntu-minimal
         release: 'xenial'
-        mirror: "http://{{ zuul_site_mirror_fqdn }}/ubuntu"
-        env-vars:
-          DIB_APT_LOCAL_CACHE: '0'
-          DIB_DISABLE_APT_CLEANUP: '1'
-          DIB_DEBOOTSTRAP_EXTRA_ARGS: '--no-check-gpg'
-
-- job:
-    name: dib-nodepool-functional-openstack-ubuntu-bionic
-    description: |
-      Test building and booting an Ubuntu bionic image with Nodepool
-      and OpenStack (using released libraries)
-    parent: nodepool-functional-openstack-base
-    pre-run: playbooks/dib-nodepool/debootstrap.yaml
-    vars:
-      nodepool_debug: true
-      nodepool_extra_packages:
-        - debootstrap
-      nodepool_diskimage:
-        base_element: ubuntu-minimal
-        release: 'bionic'
         mirror: "http://{{ zuul_site_mirror_fqdn }}/ubuntu"
         env-vars:
           DIB_APT_LOCAL_CACHE: '0'
@@ -281,6 +268,23 @@
       nodepool_diskimage:
         base_element: debian-minimal
         release: 'stretch'
+        mirror: "http://{{ zuul_site_mirror_fqdn }}/debian"
+        env-vars:
+          DIB_APT_LOCAL_CACHE: '0'
+          DIB_DISABLE_APT_CLEANUP: '1'
+          DIB_DEBOOTSTRAP_EXTRA_ARGS: '--no-check-gpg'
+
+- job:
+    name: dib-nodepool-functional-openstack-debian-bullseye-src
+    description: |
+      Test building and booting a Debian bullseye image with Nodepool
+      and OpenStack
+    parent: dib-nodepool-functional-src-base
+    pre-run: playbooks/dib-nodepool/debootstrap.yaml
+    vars:
+      nodepool_diskimage:
+        base_element: debian-minimal
+        release: 'bullseye'
         mirror: "http://{{ zuul_site_mirror_fqdn }}/debian"
         env-vars:
           DIB_APT_LOCAL_CACHE: '0'

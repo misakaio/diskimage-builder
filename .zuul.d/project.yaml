@@ -17,7 +17,7 @@
         - dib-nodepool-functional-openstack-centos-7-src
         - dib-nodepool-functional-openstack-centos-8-src
         - dib-nodepool-functional-openstack-centos-8-stream-src
-        - dib-nodepool-functional-openstack-fedora-32-src
+        - dib-nodepool-functional-openstack-fedora-34-containerfile-src
         - dib-nodepool-functional-openstack-ubuntu-xenial-src
         - dib-nodepool-functional-openstack-ubuntu-bionic-src
         - dib-nodepool-functional-openstack-ubuntu-focal-src
@@ -32,10 +32,8 @@
         - dib-functests-bionic-python3-extras
         - dib-functests-bionic-python3-containers
         - ironic-python-agent-check-image-dib-centos8
-        # IPA jobs that build AND validate an image via deployment (two ways).
-        - ipa-tempest-wholedisk-bios-ipmi-direct-dib-src:
-            voting: false
-        - ipa-tempest-bios-ipmi-iscsi-src:
+        # IPA job that builds AND validates an image via deployment
+        - ipa-tempest-bios-ipmi-direct-src:
             voting: false
     check-arm64:
       jobs:
@@ -48,7 +46,7 @@
         - dib-nodepool-functional-openstack-centos-7-src
         - dib-nodepool-functional-openstack-centos-8-src
         - dib-nodepool-functional-openstack-centos-8-stream-src
-        - dib-nodepool-functional-openstack-fedora-32-src
+        - dib-nodepool-functional-openstack-fedora-34-containerfile-src
         - dib-nodepool-functional-openstack-ubuntu-xenial-src
         - dib-nodepool-functional-openstack-ubuntu-bionic-src
         - dib-nodepool-functional-openstack-ubuntu-focal-src
@@ -61,5 +59,4 @@
         - dib-nodepool-functional-openstack-gentoo-src
         - dib-nodepool-functional-openstack-debian-stretch-src
         - dib-nodepool-functional-openstack-debian-buster-src
-        - octavia-v1-dsvm-scenario
-        - octavia-v1-dsvm-py3x-scenario
+        - dib-nodepool-functional-openstack-debian-bullseye-src
