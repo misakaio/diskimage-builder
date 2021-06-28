@@ -24,6 +24,8 @@ elif [[ ${DIB_RELEASE} == '32' ]]; then
     export DIB_FEDORA_SUBRELEASE=1.6
 elif [[ ${DIB_RELEASE} == '33' ]]; then
     export DIB_FEDORA_SUBRELEASE=1.2
+elif [[ ${DIB_RELEASE} == '34' ]]; then
+    export DIB_FEDORA_SUBRELEASE=1.2
 else
     echo "Unsupported Fedora release"
     exit 1
