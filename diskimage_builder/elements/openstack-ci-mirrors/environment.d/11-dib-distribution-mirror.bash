@@ -33,8 +33,13 @@ elif [[ "${DISTRO_NAME}" == "debian" ]]; then
 elif [[ "${DISTRO_NAME}" == "fedora" ]]; then
     export DIB_DISTRIBUTION_MIRROR=$NODEPOOL_FEDORA_MIRROR
 elif [[ "${DISTRO_NAME}" == "centos" ]]; then
-    export DIB_DISTRIBUTION_MIRROR=$NODEPOOL_CENTOS_MIRROR
-    export DIB_EPEL_MIRROR=$NODEPOOL_EPEL_MIRROR
+    if [[ "${DIB_RELEASE}" == '9-stream' ]]; then
+        # NOTE(ianw) 2021-10-18 : no 9-stream mirrors, yet
+        :
+    else
+        export DIB_DISTRIBUTION_MIRROR=$NODEPOOL_CENTOS_MIRROR
+        export DIB_EPEL_MIRROR=$NODEPOOL_EPEL_MIRROR
+    fi
 elif [[ "${DISTRO_NAME}" == "centos7" ]]; then
     export DIB_DISTRIBUTION_MIRROR=$NODEPOOL_CENTOS_MIRROR
     export DIB_EPEL_MIRROR=$NODEPOOL_EPEL_MIRROR
@@ -58,6 +63,8 @@ if [[ -d ${DIB_OS_CI_YUM_REPOS:-/not/a/path/} ]]; then
         fi
     elif [[ "${DISTRO_NAME}" == "centos" ]]; then
         export DIB_YUM_MINIMAL_BOOTSTRAP_REPOS=${DIB_OS_CI_YUM_REPOS}/centos-minimal/${DIB_RELEASE}/yum.repos.d
+    elif [[ "${DISTRO_NAME}" == "openeuler" ]]; then
+        export DIB_YUM_MINIMAL_BOOTSTRAP_REPOS=${DIB_OS_CI_YUM_REPOS}/openeuler-minimal/${DIB_RELEASE}/yum.repos.d
     fi
 
 fi

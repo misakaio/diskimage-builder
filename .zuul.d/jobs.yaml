@@ -13,70 +13,26 @@
       - ^doc/.*$
 
 - job:
-    name: dib-functests-default
+    name: dib-functests
     description: |
       This is the base set of stable tests
-    abstract: true
     parent: dib-functests-base
+    nodeset: debian-bullseye
     vars:
       dib_functests:
-        - apt-sources/test-sources
-        - centos-minimal/7-build-succeeds
-        - centos-minimal/8-build-succeeds
-        # TODO: enable when CentOS 8 Stream repos mirrored.
-        # - centos-minimal/8-stream-build-succeeds
-        - fedora/build-succeeds
-        - ubuntu-minimal/xenial-build-succeeds
-        - ubuntu-minimal/bionic-build-succeeds
-        - ubuntu-minimal/focal-build-succeeds
         - containerfile/focal-build-succeeds
-        - fedora-container/build-succeeds
-
-- job:
-    name: dib-functests-image
-    description: |
-      This is tests that rely on downloading an upstream
-      image.  We generally do not have mirrors for these images
-      so they can be slighlty unreliable.
-    abstract: true
-    voting: false
-    parent: dib-functests-base
-    vars:
-      dib_functests:
-        - centos7/build-succeeds
+        # NOTE(ianw) 2021-10-15 : this currently segfaults
+        # yum...
+        #- openeuler-minimal/20.03-LTS-SP2-build-succeeds
+        # Image based tests
         - centos/8-build-succeeds
         - centos/8-stream-build-succeeds
+        - centos/9-stream-build-succeeds
         - fedora/build-succeeds
         - opensuse/build-succeeds
         - opensuse/opensuse15-build-succeeds
-        - ubuntu/xenial-build-succeeds
         - ubuntu/bionic-build-succeeds
-
-- job:
-    name: dib-functests-extras
-    description: |
-      These are tests which are not as widely supported as the
-      core platforms
-    abstract: true
-    voting: false
-    parent: dib-functests-base
-    vars:
-      dib_functests:
-        - gentoo/build-succeeds
-        - debian-minimal/stable-vm
-
-- job:
-    name: dib-functests-containers
-    description: |
-      These are tests for elements focused on containers or other
-      small deployments
-    abstract: true
-    voting: false
-    parent: dib-functests-base
-    vars:
-      dib_functests:
-        - ubuntu-systemd-container/bionic-build-succeeds
-        - ubuntu-systemd-container/xenial-build-succeeds
+        - ubuntu/focal-build-succeeds
 
 - job:
     name: dib-functests-arm64
@@ -89,38 +45,7 @@
         - ubuntu-minimal/bionic-arm64-build-succeeds
         - ubuntu-minimal/focal-arm64-build-succeeds
         - centos-minimal/8-aarch64-build-succeeds
-
-# Bionic / Python3 tests
-- job:
-    name: dib-functests-bionic-python3
-    description: |
-      Run the default tests on a Bionic build host with Python 3
-    parent: dib-functests-default
-    nodeset: ubuntu-bionic
-
-- job:
-    name: dib-functests-bionic-python3-image
-    description: |
-      The image tests on a Bionic build host with Python 3
-    parent: dib-functests-image
-    nodeset: ubuntu-bionic
-    voting: false
-
-- job:
-    name: dib-functests-bionic-python3-extras
-    description: |
-      The extras tests on a Bionic build host with Python 3
-    parent: dib-functests-extras
-    nodeset: ubuntu-bionic
-    voting: false
-
-- job:
-    name: dib-functests-bionic-python3-containers
-    description: |
-      The containers tests on a Bionic build host with Python 3
-    parent: dib-functests-containers
-    nodeset: ubuntu-bionic
-    voting: false
+        - openeuler-minimal/20.03-LTS-SP2-build-succeeds
 
 # ARM64 tests
 - job:

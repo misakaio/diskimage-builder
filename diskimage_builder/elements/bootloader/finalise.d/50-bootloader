@@ -55,6 +55,16 @@ fi
 
 echo "Installing GRUB2..."
 
+# This might be better factored out into a per-distro 'install-bootblock'
+# helper.
+if [ -d /boot/grub2 ]; then
+    GRUB_CFG=/boot/grub2/grub.cfg
+    GRUBENV=/boot/grub2/grubenv
+elif [ -d /boot/grub ]; then
+    GRUB_CFG=/boot/grub/grub.cfg
+    GRUBENV=/boot/grub/grubenv
+fi
+
 # When using EFI image-based builds, particularly rhel element
 # based on RHEL>=8.2 .qcow2, we might have /boot/grub2/grubenv
 # as a dangling symlink to /boot/efi because we have extracted
@@ -62,8 +72,8 @@ echo "Installing GRUB2..."
 # boot partition from the image.  grub2-install calls rename()
 # on this file, so if it's a dangling symlink it errors.  Just
 # remove it if it exists.
-if [[ -L /boot/grub2/grubenv ]]; then
-    rm -f /boot/grub2/grubenv
+if [[ -L $GRUBENV ]]; then
+    rm -f $GRUBENV
 fi
 
 # We need --force so grub does not fail due to being installed on the
@@ -145,46 +155,25 @@ else
     fi
 fi
 
-# This might be better factored out into a per-distro 'install-bootblock'
-# helper.
-if [ -d /boot/grub2 ]; then
-    GRUB_CFG=/boot/grub2/grub.cfg
-elif [ -d /boot/grub ]; then
-    GRUB_CFG=/boot/grub/grub.cfg
+# Fedora 30 and RHEL-8.2 onwards support the Bootloader Spec and use grubby
+# to manage kernel menu entries and kernel arguments.
+# https://fedoraproject.org/wiki/Changes/BootLoaderSpecByDefault
+USE_GRUBBY=
+if grep -qe "^\s*GRUB_ENABLE_BLSCFG=true" /etc/default/grub; then
+    USE_GRUBBY=true
 fi
 
 # Override the root device to the default label, and disable uuid
 # lookup.
-echo "GRUB_DEVICE=LABEL=${DIB_ROOT_LABEL}" >> /etc/default/grub
+if [ -n "$USE_GRUBBY" ]; then
+    grubby --update-kernel=ALL --args="root=LABEL=${DIB_ROOT_LABEL}"
+else
+    echo "GRUB_DEVICE=LABEL=${DIB_ROOT_LABEL}" >> /etc/default/grub
+fi
 echo 'GRUB_DISABLE_LINUX_UUID=true' >> /etc/default/grub
 echo "GRUB_TIMEOUT=${DIB_GRUB_TIMEOUT:-5}" >>/etc/default/grub
 echo 'GRUB_TERMINAL="serial console"' >>/etc/default/grub
 echo 'GRUB_GFXPAYLOAD_LINUX=auto' >>/etc/default/grub
-
-# NOTE(ianw) : 2021-05-11
-# On Fedora there has been a switch to BLS
-#  https://fedoraproject.org/wiki/Changes/BootLoaderSpecByDefault
-# which means that kernel-install will have created entries in
-#  /boot/loader/entries/...
-# and, as the wiki page says
-#
-#   The main issue appears to be that a number of places document
-#   a way to pass kernel options that is no longer working with
-#   BLS, i.e. edit /etc/default/grub before running
-#   grub2-mkconfig.
-#
-# i.e. exactly what we're doing above to override the root device
-# in particular.  Override grub2 to use it's old config format and
-# remove any BLS entries the kernel install made.
-#
-# I imagine at some point we will reworking things in a more
-# general sense to support BLS if that's what everything is
-# switching to.
-#
-if [[ ${DISTRO_NAME} = fedora ]]; then
-    echo 'GRUB_ENABLE_BLSCFG=false' >> /etc/default/grub
-    rm -rf /boot/loader/
-fi
 
 if [[ -n "${DIB_BOOTLOADER_SERIAL_CONSOLE}" ]]; then
     SERIAL_CONSOLE="${DIB_BOOTLOADER_SERIAL_CONSOLE}"
@@ -198,8 +187,11 @@ else
 fi
 
 GRUB_CMDLINE_LINUX_DEFAULT="console=tty0 console=${SERIAL_CONSOLE} no_timer_check"
-
-echo "GRUB_CMDLINE_LINUX_DEFAULT=\"${GRUB_CMDLINE_LINUX_DEFAULT} ${DIB_BOOTLOADER_DEFAULT_CMDLINE}\"" >>/etc/default/grub
+if [ -n "$USE_GRUBBY" ]; then
+    grubby --update-kernel=ALL --args="$GRUB_CMDLINE_LINUX_DEFAULT"
+else
+    echo "GRUB_CMDLINE_LINUX_DEFAULT=\"${GRUB_CMDLINE_LINUX_DEFAULT} ${DIB_BOOTLOADER_DEFAULT_CMDLINE}\"" >>/etc/default/grub
+fi
 echo 'GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"' >>/etc/default/grub
 
 # os-prober leaks /dev/sda into config file in dual-boot host
@@ -238,12 +230,15 @@ fi
 if [[ ${DIB_BLOCK_DEVICE} == "efi" ]]; then
     sed -i 's%\(linux\|initrd\)16 /boot%\1efi /boot%g' $GRUB_CFG
 
-    # Finally copy the grub.cfg to the EFI specific dir to support
-    # functionality like secure boot. We make a copy because
+    # Finally copy the grub.cfg and grubenv to the EFI specific dir
+    # to support functionality like secure boot. We make a copy because
     # /boot and /boot/efi may be different partitions and uefi looks
     # for a specific partition UUID preventing symlinks from working.
     if [ -d /boot/efi/$EFI_BOOT_DIR ] ; then
         cp $GRUB_CFG /boot/efi/$EFI_BOOT_DIR/grub.cfg
+        if [ -a $GRUBENV ]; then
+            cp $GRUBENV /boot/efi/$EFI_BOOT_DIR/grubenv
+        fi
     fi
 fi
 

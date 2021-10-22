@@ -7,11 +7,11 @@
       # NOTE(ianw): 2020-05-29 jobs are unstable; see
       # https://bugs.launchpad.net/tripleo/+bug/1879766
       - tripleo-buildimage-jobs-centos-8
-      - openstack-python35-jobs
       - openstack-python3-wallaby-jobs
     check:
       jobs:
         - openstack-tox-pylint
+        - dib-functests
         - opendev-buildset-registry
         - nodepool-build-image-siblings
         - dib-nodepool-functional-openstack-centos-7-src
@@ -27,10 +27,10 @@
             voting: false
         - dib-nodepool-functional-openstack-opensuse-tumbleweed-src:
             voting: false
-        - dib-functests-bionic-python3
-        - dib-functests-bionic-python3-image
-        - dib-functests-bionic-python3-extras
-        - dib-functests-bionic-python3-containers
+        - dib-nodepool-functional-openstack-gentoo-src:
+            voting: false
+        - dib-nodepool-functional-openstack-debian-bullseye-src:
+            voting: false
         - ironic-python-agent-check-image-dib-centos8
         # IPA job that builds AND validates an image via deployment
         - ipa-tempest-bios-ipmi-direct-src:
@@ -50,13 +50,11 @@
         - dib-nodepool-functional-openstack-ubuntu-xenial-src
         - dib-nodepool-functional-openstack-ubuntu-bionic-src
         - dib-nodepool-functional-openstack-ubuntu-focal-src
-        - dib-functests-bionic-python3
+        - dib-functests
         - ironic-python-agent-check-image-dib-centos8
     experimental:
       jobs:
         - opendev-buildset-registry
         - nodepool-build-image-siblings
-        - dib-nodepool-functional-openstack-gentoo-src
         - dib-nodepool-functional-openstack-debian-stretch-src
         - dib-nodepool-functional-openstack-debian-buster-src
-        - dib-nodepool-functional-openstack-debian-bullseye-src

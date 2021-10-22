@@ -31,6 +31,8 @@ fi
 ARCH=${ARCH:-x86_64}
 if [ $ARCH = amd64 ]; then
     ARCH=x86_64
+elif [[ "arm64" == "$ARCH" ]]; then
+    ARCH="aarch64"
 fi
 # Calling elements will need to set DISTRO_NAME and DIB_RELEASE
 # TODO Maybe deal with DIB_DISTRIBUTION_MIRROR
@@ -44,6 +46,16 @@ trap "$EACTION" EXIT
 YUM_CACHE=$DIB_IMAGE_CACHE/yum
 mkdir -p $YUM_CACHE
 
+# Debian Bullseye and beyond only has DNF locally
+HOST_YUM_DOWNLOADER="yumdownloader"
+HOST_YUM="yum"
+if ! command -v yumdownloader &> /dev/null
+then
+    HOST_YUM_DOWNLOADER="dnf download"
+    HOST_YUM="dnf"
+fi
+
+
 # Note, on Debian/Ubuntu, %_dbpath is set in the RPM macros as
 # ${HOME}/.rpmdb/ -- this makes sense as RPM isn't the system
 # packager.  This path is relative to the "--root" argument
@@ -53,7 +65,7 @@ _RPM="rpm --dbpath=/var/lib/rpm"
 # chroot, which are needed to bootstrap yum/dnf
 #
 # note this runs outside the chroot, where we're assuming the platform
-# has yum/yumdownloader
+# has yum/yumdownloader/dnf download
 function _install_repos {
     local packages
     local rc
@@ -71,10 +83,12 @@ function _install_repos {
     # is that they are only installed in one big transaction with the
     # rest of the system?  but we don't want to use yum to do this
     # (see above) so ...
-    packages="basesystem filesystem setup "
-
+    packages="${DIB_YUM_MINIMAL_BOOTSTRAP_PACKAGES:-} "
+    packages+="basesystem filesystem setup "
     if [[ ${DISTRO_NAME} = fedora && ${DIB_RELEASE} -gt 29 ]]; then
         packages+="fedora-release-cloud fedora-release-common "
+    elif [[ ${DISTRO_NAME} == 'openeuler' ]]; then
+        packages+="openEuler-release "
     else
         packages+="${DISTRO_NAME}-release "
     fi
@@ -104,6 +118,11 @@ function _install_repos {
         fi
     fi
 
+    # For openEuler, install other required repos and gpy-keys packages.
+    if [[ ${DISTRO_NAME} == 'openeuler' ]]; then
+        packages+="openEuler-repos openEuler-gpg-keys "
+    fi
+
     # By default, parent elements (fedora-minimal, centos-minimal)
     # have a yum.repos.d directory in the element with a default repo;
     # this is copied to TMP_HOOK_PATH by the usual hook-copying
@@ -126,7 +145,7 @@ function _install_repos {
     # can clean it up nicely
     local temp_tmp
     temp_tmp=$(mktemp -d)
-    TMPDIR=${temp_tmp} yumdownloader --verbose \
+    TMPDIR=${temp_tmp} ${HOST_YUM_DOWNLOADER} --verbose \
         --releasever=${DIB_RELEASE/-*/} \
         --setopt=reposdir=$repo \
         --setopt=cachedir=$temp_tmp \
@@ -155,6 +174,12 @@ function _install_repos {
     if [[ -n ${DIB_YUM_MINIMAL_EXTRA_REPOS:-} ]]; then
         sudo cp ${DIB_YUM_MINIMAL_EXTRA_REPOS}/* \
             $TARGET_ROOT/etc/yum.repos.d/
+    fi
+
+    # For openEuler, some repos like update are disabled by default.
+    # Ensure all the repo is enabled, so that we get the latest packages.
+    if [[ ${DISTRO_NAME} == 'openeuler' ]]; then
+        sudo sed -i 's/enabled=0/enabled=1/' $TARGET_ROOT/etc/yum.repos.d/*.repo
     fi
 }
 
@@ -227,7 +252,7 @@ function _install_pkg_manager {
             sudo ln -s $TARGET_ROOT/etc/dnf/vars $TARGET_ROOT/etc/yum/vars
         fi
 
-        sudo -E yum -y \
+        sudo -E ${HOST_YUM} -y \
             --disableexcludes=all \
             --setopt=cachedir=$YUM_CACHE/$ARCH/$DIB_RELEASE \
             --setopt=reposdir=$TARGET_ROOT/etc/yum.repos.d \
@@ -297,7 +322,7 @@ _install_repos
 # it seems, as it seems like as part of the Fedora modular updates
 # (https://docs.fedoraproject.org/en-US/modularity/) we can pick up
 # seemingly mismatched libraries.
-if [[ ${DISTRO_NAME} == 'fedora' ]]; then
+if [[ ${DISTRO_NAME} =~ (fedora|openeuler) ]]; then
     _install_pkg_manager dnf dnf-plugins-core curl
 elif [[ ${DISTRO_NAME} == centos && $DIB_RELEASE > "7" ]]; then
     _install_pkg_manager dnf dnf-plugins-core curl libcurl
