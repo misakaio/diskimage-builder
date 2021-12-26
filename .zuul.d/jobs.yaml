@@ -21,9 +21,7 @@
     vars:
       dib_functests:
         - containerfile/focal-build-succeeds
-        # NOTE(ianw) 2021-10-15 : this currently segfaults
-        # yum...
-        #- openeuler-minimal/20.03-LTS-SP2-build-succeeds
+        - openeuler-minimal/20.03-LTS-SP2-build-succeeds
         # Image based tests
         - centos/8-build-succeeds
         - centos/8-stream-build-succeeds
@@ -38,22 +36,15 @@
     name: dib-functests-arm64
     description: |
       ARM64 build tests
-    abstract: true
+    nodeset: debian-bullseye-arm64
     parent: dib-functests-base
     vars:
       dib_functests:
         - ubuntu-minimal/bionic-arm64-build-succeeds
         - ubuntu-minimal/focal-arm64-build-succeeds
         - centos-minimal/8-aarch64-build-succeeds
+        - centos-minimal/8-stream-aarch64-build-succeeds
         - openeuler-minimal/20.03-LTS-SP2-build-succeeds
-
-# ARM64 tests
-- job:
-    name: dib-functests-arm64-bionic
-    description: |
-      ARM64 image tests building on am ARM64 Bionic host
-    nodeset: ubuntu-bionic-arm64
-    parent: dib-functests-arm64
 
 #
 # Build and boot functional tests
@@ -106,18 +97,30 @@
         # mirror: "http://{{ zuul_site_mirror_fqdn }}/centos"
 
 - job:
-    name: dib-nodepool-functional-openstack-fedora-34-containerfile-src
+    name: dib-nodepool-functional-openstack-centos-9-stream-src
+    description: |
+      Test building and booting a Centos 9 Stream image with Nodepool and
+      OpenStack.
+    parent: dib-nodepool-functional-src-base
+    vars:
+      nodepool_diskimage:
+        base_element: centos-minimal
+        release: '9-stream'
+        # TODO: set when CentOS 9 Stream repos mirrored.
+        # mirror: "http://{{ zuul_site_mirror_fqdn }}/centos"
+
+- job:
+    name: dib-nodepool-functional-openstack-fedora-35-containerfile-src
     description: |
       Test building and booting an Fedora image from a
       containerfile with Nodepool and OpenStack (using released
       libraries)
     parent: dib-nodepool-functional-src-base
-    pre-run: playbooks/dib-nodepool/debootstrap.yaml
     vars:
       nodepool_debug: true
       nodepool_diskimage:
         base_element: fedora-container
-        release: '34'
+        release: '35'
 
 - job:
     name: dib-nodepool-functional-openstack-ubuntu-xenial-src
@@ -125,7 +128,6 @@
       Test building and booting an Ubuntu xenial image with Nodepool
       and OpenStack
     parent: dib-nodepool-functional-src-base
-    pre-run: playbooks/dib-nodepool/debootstrap.yaml
     vars:
       nodepool_diskimage:
         base_element: ubuntu-minimal
@@ -142,7 +144,6 @@
       Test building and booting an Ubuntu bionic image with Nodepool
       and OpenStack
     parent: dib-nodepool-functional-src-base
-    pre-run: playbooks/dib-nodepool/debootstrap.yaml
     vars:
       nodepool_diskimage:
         base_element: ubuntu-minimal
@@ -159,7 +160,6 @@
       Test building and booting an Ubuntu focal image with Nodepool
       and OpenStack
     parent: dib-nodepool-functional-src-base
-    pre-run: playbooks/dib-nodepool/debootstrap.yaml
     vars:
       nodepool_diskimage:
         base_element: ubuntu-minimal
@@ -188,7 +188,6 @@
       Test building and booting a Debian stretch image with Nodepool
       and OpenStack
     parent: dib-nodepool-functional-src-base
-    pre-run: playbooks/dib-nodepool/debootstrap.yaml
     vars:
       nodepool_diskimage:
         base_element: debian-minimal
@@ -205,7 +204,6 @@
       Test building and booting a Debian bullseye image with Nodepool
       and OpenStack
     parent: dib-nodepool-functional-src-base
-    pre-run: playbooks/dib-nodepool/debootstrap.yaml
     vars:
       nodepool_diskimage:
         base_element: debian-minimal
@@ -222,7 +220,6 @@
       Test building and booting a Debian buster image with Nodepool
       and OpenStack
     parent: dib-nodepool-functional-src-base
-    pre-run: playbooks/dib-nodepool/debootstrap.yaml
     vars:
       nodepool_diskimage:
         base_element: debian-minimal
